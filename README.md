@@ -24,6 +24,8 @@
 
 ## Запуск
 
+Потрібен Node.js 22.12 або новіший (див. `.nvmrc`; з nvm: `nvm install && nvm use`).
+
 ```bash
 npm install
 npm run dev       # локальний сервер розробки

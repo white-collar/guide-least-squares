@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Інтерактивний підручник з методу найменших квадратів",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
