@@ -1,0 +1,20 @@
+{
+  "name": "guide-least-squares",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Інтерактивний підручник з методу найменших квадратів",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.3.1"
+  },
+  "dependencies": {
+    "katex": "^0.18.9"
+  }
+}
