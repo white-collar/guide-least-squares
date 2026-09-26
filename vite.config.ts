@@ -8,6 +8,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: resolve(import.meta.dirname, 'index.html'),
+        ch01: resolve(import.meta.dirname, 'chapters/01-overdetermined.html'),
       },
     },
   },
