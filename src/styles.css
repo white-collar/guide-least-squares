@@ -879,3 +879,20 @@ button.active {
   font-family: var(--font-ui);
   font-size: 0.97rem;
 }
+
+/* ---------- Вузькі екрани ---------- */
+@media (max-width: 520px) {
+  body {
+    font-size: 1.06rem;
+  }
+  table {
+    font-size: 0.86rem;
+  }
+  th,
+  td {
+    padding: 0.35rem 0.3rem;
+  }
+  .widget {
+    padding: 0.8rem 0.7rem;
+  }
+}

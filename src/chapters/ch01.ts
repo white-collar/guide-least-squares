@@ -514,6 +514,7 @@ function initRedundancyWidget(): void {
     xTicks: [9.94, 9.96, 9.98, 10.0, 10.02, 10.04, 10.06, 10.08],
     xLabel: 'м',
     ariaLabel: 'Виміри одного експерименту та гістограма середніх з багатьох експериментів',
+    compact: { width: 440, height: 340, xTicks: [9.94, 9.98, 10.02, 10.06] },
   });
   const { sx, sy, layer } = plot;
 
