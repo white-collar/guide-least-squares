@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         index: resolve(import.meta.dirname, 'index.html'),
         ch01: resolve(import.meta.dirname, 'chapters/01-overdetermined.html'),
+        ch02: resolve(import.meta.dirname, 'chapters/02-best-solution.html'),
       },
     },
   },

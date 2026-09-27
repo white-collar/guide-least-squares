@@ -896,3 +896,53 @@ button.active {
     padding: 0.8rem 0.7rem;
   }
 }
+
+/* ---------- Розділ 2: вкладки критеріїв, легенда, норми ---------- */
+.crit-tab {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  min-width: 4.5rem;
+}
+
+.crit-tab[aria-selected='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.eq-table tr.current td {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.legend .swatch {
+  display: inline-block;
+  width: 1.8rem;
+  border-top: 2.5px solid;
+  vertical-align: middle;
+  margin-right: 0.35rem;
+}
+
+figure.norm-balls {
+  margin: 1rem 0 1.5rem;
+}
+
+figure.norm-balls svg {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: auto;
+}
+
+.legend[hidden] {
+  display: none;
+}
