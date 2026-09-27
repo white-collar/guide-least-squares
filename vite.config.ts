@@ -10,6 +10,7 @@ export default defineConfig({
         index: resolve(import.meta.dirname, 'index.html'),
         ch01: resolve(import.meta.dirname, 'chapters/01-overdetermined.html'),
         ch02: resolve(import.meta.dirname, 'chapters/02-best-solution.html'),
+        ch03: resolve(import.meta.dirname, 'chapters/03-bowl.html'),
       },
     },
   },

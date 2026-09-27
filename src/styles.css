@@ -946,3 +946,45 @@ figure.norm-balls svg {
 .legend[hidden] {
   display: none;
 }
+
+/* ---------- Розділ 3: два простори, перерізи, 3D ---------- */
+.bowl-grid,
+.slices {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.bowl-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin: 0.4rem 0;
+}
+
+.num-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+}
+
+.bowl-canvas {
+  display: block;
+  width: 100%;
+  height: 380px;
+  touch-action: none;
+  cursor: grab;
+}
+
+@media (max-width: 760px) {
+  .bowl-grid,
+  .slices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bowl-canvas {
+    height: 300px;
+  }
+}
