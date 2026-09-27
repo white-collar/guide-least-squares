@@ -11,6 +11,7 @@ export default defineConfig({
         ch01: resolve(import.meta.dirname, 'chapters/01-overdetermined.html'),
         ch02: resolve(import.meta.dirname, 'chapters/02-best-solution.html'),
         ch03: resolve(import.meta.dirname, 'chapters/03-bowl.html'),
+        ch04: resolve(import.meta.dirname, 'chapters/04-normal-equations.html'),
       },
     },
   },

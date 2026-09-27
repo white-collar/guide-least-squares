@@ -988,3 +988,116 @@ figure.norm-balls svg {
     height: 300px;
   }
 }
+
+/* ---------- Розділ 4: індикатори, покроковий вивід, таблиця сум ---------- */
+.gauge {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.gauge-track {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.gauge-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: background 0.2s;
+}
+
+.gauge-zero {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+}
+
+.gauge-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.sums-table tfoot th {
+  color: var(--text);
+  border-top: 2px solid var(--border);
+}
+
+ol.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.8rem;
+}
+
+.step {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem 0.3rem;
+  background: var(--bg);
+}
+
+.step-title {
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.step-numbers {
+  color: var(--accent);
+}
+
+.step-text {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0.4rem;
+}
+
+.net-svg {
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.net-inputs label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.net-inputs input {
+  font: inherit;
+  font-family: var(--font-mono);
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  width: 9rem;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+  border-color: var(--border);
+}
