@@ -426,12 +426,15 @@ function initLevelNet(): void {
     const x = solve2(N, u)!;
     const v = A.map((row, i) => row[0] * x[0] + row[1] * x[1] - l[i]);
     const w = h[0] + h[1] - h[2];
+    const narrow = matOut.clientWidth < 560;
     tex(
       matOut,
+      (narrow ? '\\begin{gathered}' : '') +
       `A = \\begin{pmatrix} 1 & 0 \\\\ -1 & 1 \\\\ 0 & 1 \\end{pmatrix},\\quad
-       \\mathbf l = \\begin{pmatrix} ${tn(l[0], 3)} \\\\ ${tn(l[1], 3)} \\\\ ${tn(l[2], 3)} \\end{pmatrix},\\quad
+       \\mathbf l = \\begin{pmatrix} ${tn(l[0], 3)} \\\\ ${tn(l[1], 3)} \\\\ ${tn(l[2], 3)} \\end{pmatrix}${matOut.clientWidth < 560 ? '\\\\[4pt]' : ',\\quad'}
        A^\\mathsf{T}A = \\begin{pmatrix} 2 & -1 \\\\ -1 & 2 \\end{pmatrix},\\quad
-       A^\\mathsf{T}\\mathbf l = \\begin{pmatrix} ${tn(u[0], 3)} \\\\ ${tn(u[1], 3)} \\end{pmatrix}`,
+       A^\\mathsf{T}\\mathbf l = \\begin{pmatrix} ${tn(u[0], 3)} \\\\ ${tn(u[1], 3)} \\end{pmatrix}` +
+      (narrow ? '\\end{gathered}' : ''),
       true,
     );
     solOut.innerHTML = `
