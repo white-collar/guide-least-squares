@@ -15,6 +15,7 @@ export default defineConfig({
         ch05: resolve(import.meta.dirname, 'chapters/05-geometry.html'),
         ch06: resolve(import.meta.dirname, 'chapters/06-programming.html'),
         ch07: resolve(import.meta.dirname, 'chapters/07-beyond-lines.html'),
+        ch08: resolve(import.meta.dirname, 'chapters/08-geodesy.html'),
       },
     },
   },

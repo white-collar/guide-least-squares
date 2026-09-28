@@ -1183,3 +1183,16 @@ button:disabled {
   font-family: var(--font-mono);
   text-transform: none;
 }
+
+/* ---------- Розділ 8 ---------- */
+.net-table input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  width: 5.2rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+}
