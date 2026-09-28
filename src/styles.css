@@ -1154,3 +1154,12 @@ button:disabled {
   background: var(--accent);
   opacity: 0.75;
 }
+
+/* ---------- Розділ 6 ---------- */
+.eq-table .swatch {
+  display: inline-block;
+  width: 1.2rem;
+  border-top: 3px solid;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
