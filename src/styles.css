@@ -1196,3 +1196,26 @@ button:disabled {
   background: var(--bg);
   color: var(--text);
 }
+
+/* ---------- Розділ 9 ---------- */
+.ellipse-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .ellipse-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .ellipse-grid .panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .ellipse-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
