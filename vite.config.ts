@@ -14,6 +14,7 @@ export default defineConfig({
         ch04: resolve(import.meta.dirname, 'chapters/04-normal-equations.html'),
         ch05: resolve(import.meta.dirname, 'chapters/05-geometry.html'),
         ch06: resolve(import.meta.dirname, 'chapters/06-programming.html'),
+        ch07: resolve(import.meta.dirname, 'chapters/07-beyond-lines.html'),
       },
     },
   },

@@ -110,3 +110,49 @@ export function eigSym2(M: number[][]): { l1: number; l2: number; angle: number 
   const rad = Math.hypot((p - r) / 2, q);
   return { l1: mid + rad, l2: mid - rad, angle: 0.5 * Math.atan2(2 * q, p - r) };
 }
+
+/* ---------- Загальний МНК для k параметрів ---------- */
+
+/**
+ * Розв'язує A·θ ≈ y методом найменших квадратів через QR-розклад
+ * (відбиття Хаусхолдера, див. розділ 6). A — масив рядків n×k.
+ * Повертає null, якщо стовпці A (майже) лінійно залежні.
+ */
+export function lstsq(A: number[][], y: number[]): number[] | null {
+  const n = A.length;
+  const k = A[0]?.length ?? 0;
+  if (n < k || k === 0) return null;
+  const R = A.map((r) => [...r]);
+  const b = [...y];
+  const scale = Math.max(...A.flat().map(Math.abs), 1e-300);
+  for (let j = 0; j < k; j++) {
+    let norm = 0;
+    for (let i = j; i < n; i++) norm += R[i][j] ** 2;
+    norm = Math.sqrt(norm);
+    if (norm < 1e-12 * scale) return null;
+    const alpha = R[j][j] > 0 ? -norm : norm;
+    const v = new Array(n).fill(0);
+    for (let i = j; i < n; i++) v[i] = R[i][j];
+    v[j] -= alpha;
+    const vv = v.reduce((s, t) => s + t * t, 0);
+    if (vv === 0) continue;
+    for (let c = j; c < k; c++) {
+      let d = 0;
+      for (let i = j; i < n; i++) d += v[i] * R[i][c];
+      const f = (2 * d) / vv;
+      for (let i = j; i < n; i++) R[i][c] -= f * v[i];
+    }
+    let d = 0;
+    for (let i = j; i < n; i++) d += v[i] * b[i];
+    const f = (2 * d) / vv;
+    for (let i = j; i < n; i++) b[i] -= f * v[i];
+  }
+  const theta = new Array(k).fill(0);
+  for (let i = k - 1; i >= 0; i--) {
+    let s = b[i];
+    for (let p = i + 1; p < k; p++) s -= R[i][p] * theta[p];
+    if (Math.abs(R[i][i]) < 1e-12 * scale) return null;
+    theta[i] = s / R[i][i];
+  }
+  return theta;
+}

@@ -436,6 +436,12 @@ th {
   -webkit-user-select: none;
 }
 
+/* KaTeX малює корені й великі дужки через власні SVG: повертаємо їм рідні розміри. */
+.widget .katex svg {
+  height: inherit;
+  touch-action: auto;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -1162,4 +1168,18 @@ button:disabled {
   border-top: 3px solid;
   vertical-align: middle;
   margin-right: 0.4rem;
+}
+
+/* ---------- Розділ 7 ---------- */
+.basis-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.a-preview th {
+  font-family: var(--font-mono);
+  text-transform: none;
 }
