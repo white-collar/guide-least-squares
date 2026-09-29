@@ -1219,3 +1219,10 @@ button:disabled {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Розділ 10 ---------- */
+ol.baarda {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.88rem;
+}

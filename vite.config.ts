@@ -17,6 +17,7 @@ export default defineConfig({
         ch07: resolve(import.meta.dirname, 'chapters/07-beyond-lines.html'),
         ch08: resolve(import.meta.dirname, 'chapters/08-geodesy.html'),
         ch09: resolve(import.meta.dirname, 'chapters/09-statistics.html'),
+        ch10: resolve(import.meta.dirname, 'chapters/10-machine-learning.html'),
       },
     },
   },
