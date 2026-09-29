@@ -1226,3 +1226,48 @@ ol.baarda {
   padding-left: 1.2rem;
   font-size: 0.88rem;
 }
+
+/* Розділ 11: вибір методу, підказки до задач */
+.chooser-options {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+
+.chooser-options label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.chooser-options input {
+  margin-top: 0.3rem;
+  accent-color: var(--accent);
+}
+
+ol.recipe {
+  margin: 0;
+  padding-left: 1.4rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+ol.recipe li {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+ol.recipe li.extra {
+  background: var(--accent-soft);
+}
+
+.quiz details.hint {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.quiz details.hint summary {
+  cursor: pointer;
+  color: var(--accent);
+}
