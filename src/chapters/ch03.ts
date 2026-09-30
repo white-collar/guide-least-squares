@@ -613,4 +613,78 @@ function init3D(): (s: BowlState) => void {
   };
 }
 
+/* =====================================================================
+   3.1. Кожна пряма — одна точка в просторі параметрів
+   ===================================================================== */
+function initDual(): void {
+  const root = $('#w-dual');
+  const status = $('[data-out="status"]', root);
+  const LINES = [
+    { a: 1, b: 0.5, color: 'var(--accent)' },
+    { a: 3, b: -0.5, color: 'var(--warn)' },
+    { a: 0, b: 1, color: 'var(--good)' },
+    { a: 2, b: 0, color: 'var(--bad)' },
+  ];
+  const data = createPlot($('.plot-lines', root), {
+    width: 320,
+    height: 260,
+    x: [0, 4],
+    y: [-1, 5],
+    margin: { top: 14, right: 12, bottom: 30, left: 32 },
+    xTicks: [0, 1, 2, 3, 4],
+    yTicks: [-1, 0, 1, 2, 3, 4, 5],
+    xLabel: 'x',
+    yLabel: 'y',
+    ariaLabel: 'Простір даних: чотири прямі',
+  });
+  const par = createPlot($('.plot-points', root), {
+    width: 320,
+    height: 260,
+    x: [-1, 4],
+    y: [-1, 1.5],
+    margin: { top: 14, right: 12, bottom: 30, left: 36 },
+    xTicks: [-1, 0, 1, 2, 3, 4],
+    yTicks: [-1, -0.5, 0, 0.5, 1, 1.5],
+    xLabel: 'a',
+    yLabel: 'b',
+    ariaLabel: 'Простір параметрів: чотири точки',
+  });
+  const titles = [
+    [data, 'Простір даних'],
+    [par, 'Простір параметрів'],
+  ] as const;
+  for (const [p, t] of titles) {
+    const el = svgEl('text', { x: p.opts.width - 14, y: p.opts.margin.top + 14, 'text-anchor': 'end', class: 'plot-label', style: 'font-weight: 600' }, p.svg);
+    el.textContent = t;
+  }
+
+  const eq = (a: number, b: number) => {
+    const bs = b === 0 ? '' : ` ${b < 0 ? '−' : '+'} ${fmt(Math.abs(b), 1)}x`.replace(' 1,0x', ' x');
+    return `y = ${fmt(a, 0)}${bs}`.replace('y = 0 + ', 'y = ');
+  };
+
+  const items = LINES.map((l) => {
+    const line = svgEl('line', { x1: data.sx(0), y1: data.sy(l.a), x2: data.sx(4), y2: data.sy(l.a + 4 * l.b), stroke: l.color, 'stroke-width': 2.5 }, data.layer);
+    const hit = svgEl('line', { x1: data.sx(0), y1: data.sy(l.a), x2: data.sx(4), y2: data.sy(l.a + 4 * l.b), stroke: 'transparent', 'stroke-width': 16, style: 'cursor: pointer' }, data.layer);
+    const dot = svgEl('circle', { cx: par.sx(l.a), cy: par.sy(l.b), r: 7, fill: l.color, stroke: 'var(--surface)', 'stroke-width': 2, style: 'cursor: pointer' }, par.layer);
+    return { l, line, hit, dot };
+  });
+
+  function select(k: number) {
+    items.forEach((it, i) => {
+      const on = i === k;
+      setAttrs(it.line, { 'stroke-width': on ? 4.5 : 2, 'stroke-opacity': on ? 1 : 0.35 });
+      setAttrs(it.dot, { r: on ? 10 : 6, 'fill-opacity': on ? 1 : 0.35 });
+    });
+    const { a, b } = items[k].l;
+    status.textContent = `Пряма ${eq(a, b)} ↔ точка (a; b) = (${fmt(a, 0)}; ${fmt(b, Number.isInteger(b) ? 0 : 1)}). Висота перетину з віссю y — це a, нахил — b.`;
+  }
+  items.forEach((it, i) => {
+    it.hit.addEventListener('click', () => select(i));
+    it.dot.addEventListener('click', () => select(i));
+  });
+  select(0);
+}
+
+initDual();
 initBowl(init3D());
