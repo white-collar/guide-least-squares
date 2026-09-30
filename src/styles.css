@@ -436,6 +436,12 @@ th {
   -webkit-user-select: none;
 }
 
+/* KaTeX малює корені й великі дужки через власні SVG: повертаємо їм рідні розміри. */
+.widget .katex svg {
+  height: inherit;
+  touch-action: auto;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -878,4 +884,390 @@ button.active {
 .structure-list {
   font-family: var(--font-ui);
   font-size: 0.97rem;
+}
+
+/* ---------- Вузькі екрани ---------- */
+@media (max-width: 520px) {
+  body {
+    font-size: 1.06rem;
+  }
+  table {
+    font-size: 0.86rem;
+  }
+  th,
+  td {
+    padding: 0.35rem 0.3rem;
+  }
+  .widget {
+    padding: 0.8rem 0.7rem;
+  }
+}
+
+/* ---------- Розділ 2: вкладки критеріїв, легенда, норми ---------- */
+.crit-tab {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  min-width: 4.5rem;
+}
+
+.crit-tab[aria-selected='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.eq-table tr.current td {
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.legend .swatch {
+  display: inline-block;
+  width: 1.8rem;
+  border-top: 2.5px solid;
+  vertical-align: middle;
+  margin-right: 0.35rem;
+}
+
+figure.norm-balls {
+  margin: 1rem 0 1.5rem;
+}
+
+figure.norm-balls svg {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: auto;
+}
+
+.legend[hidden] {
+  display: none;
+}
+
+/* ---------- Розділ 3: два простори, перерізи, 3D ---------- */
+.bowl-grid,
+.slices {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.bowl-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin: 0.4rem 0;
+}
+
+.num-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+}
+
+.bowl-canvas {
+  display: block;
+  width: 100%;
+  height: 380px;
+  touch-action: none;
+  cursor: grab;
+}
+
+@media (max-width: 760px) {
+  .bowl-grid,
+  .slices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bowl-canvas {
+    height: 300px;
+  }
+}
+
+/* ---------- Розділ 4: індикатори, покроковий вивід, таблиця сум ---------- */
+.gauge {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.gauge-track {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.gauge-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: background 0.2s;
+}
+
+.gauge-zero {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+}
+
+.gauge-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.sums-table tfoot th {
+  color: var(--text);
+  border-top: 2px solid var(--border);
+}
+
+ol.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.8rem;
+}
+
+.step {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem 0.3rem;
+  background: var(--bg);
+}
+
+.step-title {
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.step-numbers {
+  color: var(--accent);
+}
+
+.step-text {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0.4rem;
+}
+
+.net-svg {
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.net-inputs label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.net-inputs input {
+  font: inherit;
+  font-family: var(--font-mono);
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  width: 9rem;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+  border-color: var(--border);
+}
+
+/* ---------- Розділ 5: 3D-проєкція, важелі ---------- */
+.proj-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.proj-canvas {
+  display: block;
+  width: 100%;
+  height: 440px;
+  touch-action: none;
+  cursor: grab;
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+@media (max-width: 760px) {
+  .proj-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .proj-canvas {
+    height: 340px;
+  }
+}
+
+.lev {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.lev-row {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr) 3.5rem;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.lev-track {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.lev-bar {
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.75;
+}
+
+/* ---------- Розділ 6 ---------- */
+.eq-table .swatch {
+  display: inline-block;
+  width: 1.2rem;
+  border-top: 3px solid;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+
+/* ---------- Розділ 7 ---------- */
+.basis-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.a-preview th {
+  font-family: var(--font-mono);
+  text-transform: none;
+}
+
+/* ---------- Розділ 8 ---------- */
+.net-table input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  width: 5.2rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Розділ 9 ---------- */
+.ellipse-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .ellipse-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .ellipse-grid .panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .ellipse-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Розділ 10 ---------- */
+ol.baarda {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.88rem;
+}
+
+/* Розділ 11: вибір методу, підказки до задач */
+.chooser-options {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+}
+
+.chooser-options label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.chooser-options input {
+  margin-top: 0.3rem;
+  accent-color: var(--accent);
+}
+
+ol.recipe {
+  margin: 0;
+  padding-left: 1.4rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+ol.recipe li {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+ol.recipe li.extra {
+  background: var(--accent-soft);
+}
+
+.quiz details.hint {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.quiz details.hint summary {
+  cursor: pointer;
+  color: var(--accent);
 }

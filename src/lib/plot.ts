@@ -31,7 +31,11 @@ export interface PlotOptions {
   xLabel?: string;
   yLabel?: string;
   ariaLabel?: string;
+  /** Параметри, що замінюють основні на вузьких екранах (ширина контейнера < 560 px). */
+  compact?: Partial<Omit<PlotOptions, 'compact'>>;
 }
+
+export const isCompact = (container: Element) => container.clientWidth > 0 && container.clientWidth < 560;
 
 export interface Plot {
   svg: SVGSVGElement;
@@ -47,7 +51,8 @@ export interface Plot {
   };
 }
 
-export function createPlot(container: Element, o: PlotOptions): Plot {
+export function createPlot(container: Element, options: PlotOptions): Plot {
+  const o: PlotOptions = options.compact && isCompact(container) ? { ...options, ...options.compact } : options;
   const margin = o.margin ?? { top: 16, right: 16, bottom: 36, left: 40 };
   const { width, height } = o;
   const [x0, x1] = o.x;

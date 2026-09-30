@@ -8,6 +8,17 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: resolve(import.meta.dirname, 'index.html'),
+        ch01: resolve(import.meta.dirname, 'chapters/01-overdetermined.html'),
+        ch02: resolve(import.meta.dirname, 'chapters/02-best-solution.html'),
+        ch03: resolve(import.meta.dirname, 'chapters/03-bowl.html'),
+        ch04: resolve(import.meta.dirname, 'chapters/04-normal-equations.html'),
+        ch05: resolve(import.meta.dirname, 'chapters/05-geometry.html'),
+        ch06: resolve(import.meta.dirname, 'chapters/06-programming.html'),
+        ch07: resolve(import.meta.dirname, 'chapters/07-beyond-lines.html'),
+        ch08: resolve(import.meta.dirname, 'chapters/08-geodesy.html'),
+        ch09: resolve(import.meta.dirname, 'chapters/09-statistics.html'),
+        ch10: resolve(import.meta.dirname, 'chapters/10-machine-learning.html'),
+        ch11: resolve(import.meta.dirname, 'chapters/11-summary.html'),
       },
     },
   },

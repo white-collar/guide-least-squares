@@ -58,3 +58,101 @@ export function gaussian(rand: () => number): number {
   const v = rand();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
+
+/* ---------- Квадратична форма суми квадратів для прямої ---------- */
+
+/**
+ * Для моделі y = a + b·(x − shift) сума квадратів нев'язок записується як
+ * S(θ) = θᵀMθ − 2θᵀv + c, де θ = (a, b). Усе визначають п'ять сум по даних.
+ */
+export interface Quadratic {
+  M: [[number, number], [number, number]];
+  v: [number, number];
+  c: number;
+}
+
+export function lineQuadratic(pts: Pt[], shift = 0): Quadratic {
+  let n = 0, su = 0, suu = 0, sy = 0, suy = 0, syy = 0;
+  for (const p of pts) {
+    const u = p.x - shift;
+    n += 1;
+    su += u;
+    suu += u * u;
+    sy += p.y;
+    suy += u * p.y;
+    syy += p.y * p.y;
+  }
+  return { M: [[n, su], [su, suu]], v: [sy, suy], c: syy };
+}
+
+export function evalQuadratic(q: Quadratic, a: number, b: number): number {
+  const { M, v, c } = q;
+  return M[0][0] * a * a + 2 * M[0][1] * a * b + M[1][1] * b * b - 2 * (v[0] * a + v[1] * b) + c;
+}
+
+/** Градієнт S: 2(Mθ − v). */
+export function gradQuadratic(q: Quadratic, a: number, b: number): [number, number] {
+  const { M, v } = q;
+  return [2 * (M[0][0] * a + M[0][1] * b - v[0]), 2 * (M[1][0] * a + M[1][1] * b - v[1])];
+}
+
+/** Розв'язок 2×2 системи Mθ = v (null, якщо матриця вироджена). */
+export function solve2(M: number[][], v: number[]): [number, number] | null {
+  const det = M[0][0] * M[1][1] - M[0][1] * M[1][0];
+  if (Math.abs(det) < 1e-10 * Math.max(1, Math.abs(M[0][0] * M[1][1]))) return null;
+  return [(v[0] * M[1][1] - M[0][1] * v[1]) / det, (M[0][0] * v[1] - M[1][0] * v[0]) / det];
+}
+
+/** Власні значення (λ₁ ≥ λ₂) і кут першого власного вектора симетричної 2×2 матриці. */
+export function eigSym2(M: number[][]): { l1: number; l2: number; angle: number } {
+  const [p, q, r] = [M[0][0], M[0][1], M[1][1]];
+  const mid = (p + r) / 2;
+  const rad = Math.hypot((p - r) / 2, q);
+  return { l1: mid + rad, l2: mid - rad, angle: 0.5 * Math.atan2(2 * q, p - r) };
+}
+
+/* ---------- Загальний МНК для k параметрів ---------- */
+
+/**
+ * Розв'язує A·θ ≈ y методом найменших квадратів через QR-розклад
+ * (відбиття Хаусхолдера, див. розділ 6). A — масив рядків n×k.
+ * Повертає null, якщо стовпці A (майже) лінійно залежні.
+ */
+export function lstsq(A: number[][], y: number[]): number[] | null {
+  const n = A.length;
+  const k = A[0]?.length ?? 0;
+  if (n < k || k === 0) return null;
+  const R = A.map((r) => [...r]);
+  const b = [...y];
+  const scale = Math.max(...A.flat().map(Math.abs), 1e-300);
+  for (let j = 0; j < k; j++) {
+    let norm = 0;
+    for (let i = j; i < n; i++) norm += R[i][j] ** 2;
+    norm = Math.sqrt(norm);
+    if (norm < 1e-12 * scale) return null;
+    const alpha = R[j][j] > 0 ? -norm : norm;
+    const v = new Array(n).fill(0);
+    for (let i = j; i < n; i++) v[i] = R[i][j];
+    v[j] -= alpha;
+    const vv = v.reduce((s, t) => s + t * t, 0);
+    if (vv === 0) continue;
+    for (let c = j; c < k; c++) {
+      let d = 0;
+      for (let i = j; i < n; i++) d += v[i] * R[i][c];
+      const f = (2 * d) / vv;
+      for (let i = j; i < n; i++) R[i][c] -= f * v[i];
+    }
+    let d = 0;
+    for (let i = j; i < n; i++) d += v[i] * b[i];
+    const f = (2 * d) / vv;
+    for (let i = j; i < n; i++) b[i] -= f * v[i];
+  }
+  const theta = new Array(k).fill(0);
+  for (let i = k - 1; i >= 0; i--) {
+    let s = b[i];
+    for (let p = i + 1; p < k; p++) s -= R[i][p] * theta[p];
+    if (Math.abs(R[i][i]) < 1e-12 * scale) return null;
+    theta[i] = s / R[i][i];
+  }
+  return theta;
+}
