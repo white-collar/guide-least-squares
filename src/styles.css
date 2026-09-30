@@ -988,3 +988,17 @@ figure.norm-balls svg {
     height: 300px;
   }
 }
+
+/* Розділ 3: прямі ↔ точки простору параметрів */
+.dual-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+@media (max-width: 560px) {
+  .dual-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
