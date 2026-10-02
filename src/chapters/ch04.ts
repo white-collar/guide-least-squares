@@ -13,7 +13,7 @@ import {
   snap,
   svgEl,
 } from '../lib/plot';
-import { lineQuadratic, solve2, type Pt } from '../lib/linalg';
+import { eigSym2, evalQuadratic, gradQuadratic, lineQuadratic, solve2, type Pt } from '../lib/linalg';
 
 import normalPy from '../snippets/ch04/normal.py?raw';
 import normalJs from '../snippets/ch04/normal.js?raw';
@@ -449,5 +449,150 @@ function initLevelNet(): void {
 
 const sums = makeSumsTable();
 const steps = makeSteps();
+/* =====================================================================
+   4.1. Де нахили дорівнюють нулю: карта чаші й два перерізи
+   ===================================================================== */
+function initSlopes(): void {
+  const root = $('#w-slopes');
+  const status = $('[data-out="status"]', root);
+  // Чотири точки з x від −1 до 2: лінії нульових нахилів перетинаються під помітним кутом.
+  const pts: Pt[] = [
+    { x: -1, y: 0.5 },
+    { x: 0, y: 1 },
+    { x: 1, y: 2 },
+    { x: 2, y: 2.2 },
+  ];
+  const q = lineQuadratic(pts);
+  const opt = solve2(q.M, q.v)!;
+  const S = (a: number, b: number) => evalQuadratic(q, a, b);
+  const Smin = S(opt[0], opt[1]);
+  const A: [number, number] = [-0.4, 2.6];
+  const B: [number, number] = [-0.4, 1.6];
+  const COL_A = 'var(--warn)';
+  const COL_B = 'var(--good)';
+
+  const map = createPlot($('.plot-map', root), {
+    width: 440,
+    height: 340,
+    x: A,
+    y: B,
+    margin: { top: 14, right: 14, bottom: 30, left: 40 },
+    xTicks: [0, 0.5, 1, 1.5, 2, 2.5],
+    yTicks: [0, 0.5, 1, 1.5],
+    xLabel: 'a',
+    yLabel: 'b',
+    ariaLabel: 'Карта чаші S(a, b) з лініями нульових нахилів',
+    compact: { width: 340, height: 280, margin: { top: 12, right: 12, bottom: 28, left: 36 } },
+  });
+  // Еліпси рівня.
+  const kx = map.sx(1) - map.sx(0);
+  const ky = map.sy(1) - map.sy(0);
+  const g = svgEl('g', { transform: `matrix(${kx},0,0,${ky},${map.sx(0)},${map.sy(0)})` }, map.layer);
+  const { l1, l2, angle } = eigSym2(q.M);
+  for (const lv of [0.25, 1, 2.25, 4, 6.25, 9, 12.25]) {
+    svgEl('ellipse', { cx: 0, cy: 0, rx: Math.sqrt(lv / l1), ry: Math.sqrt(lv / l2), transform: `translate(${opt[0]},${opt[1]}) rotate(${(angle * 180) / Math.PI})`, fill: 'var(--accent)', 'fill-opacity': 0.06, stroke: 'var(--accent)', 'stroke-opacity': 0.35, 'vector-effect': 'non-scaling-stroke' }, g);
+  }
+  // Лінії нульових нахилів: ∂S/∂a = 0 ⇔ M₀₀a + M₀₁b = v₀; ∂S/∂b = 0 ⇔ M₁₀a + M₁₁b = v₁.
+  const zeroLine = (row: 0 | 1, color: string) => {
+    const [m0, m1] = q.M[row];
+    const aAt = (b: number) => (q.v[row] - m1 * b) / m0;
+    svgEl('line', { x1: map.sx(aAt(B[0])), y1: map.sy(B[0]), x2: map.sx(aAt(B[1])), y2: map.sy(B[1]), stroke: color, 'stroke-width': 2.5 }, map.layer);
+  };
+  zeroLine(0, COL_A);
+  zeroLine(1, COL_B);
+  const guideA = svgEl('line', { stroke: COL_A, 'stroke-width': 1.2, 'stroke-dasharray': '5 4' }, map.layer);
+  const guideB = svgEl('line', { stroke: COL_B, 'stroke-width': 1.2, 'stroke-dasharray': '5 4' }, map.layer);
+  const star = svgEl('path', { d: 'M-6,-6 L6,6 M-6,6 L6,-6', stroke: 'var(--text)', 'stroke-width': 2 }, map.layer);
+  star.setAttribute('transform', `translate(${map.sx(opt[0])},${map.sy(opt[1])})`);
+  const dot = svgEl('circle', { r: 9, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2.5, class: 'draggable' }, map.svg);
+
+  const section = (box: HTMLElement, dom: [number, number], label: string, color: string) => {
+    const p = createPlot(box, {
+      width: 300,
+      height: 170,
+      x: dom,
+      y: [Smin - 0.3, Smin + 6],
+      margin: { top: 22, right: 12, bottom: 26, left: 12 },
+      xTicks: dom === A ? [0, 1, 2] : [0, 0.5, 1, 1.5],
+      xLabel: label,
+      ariaLabel: `Переріз чаші вздовж ${label}`,
+      compact: { height: 140 },
+    });
+    const t = svgEl('text', { x: 14, y: 15, class: 'plot-label', style: 'font-weight: 600' }, p.svg);
+    t.textContent = `Переріз уздовж ${label}`;
+    const curve = svgEl('path', { fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2 }, p.layer);
+    const tangent = svgEl('line', { stroke: color, 'stroke-width': 3, 'stroke-linecap': 'round' }, p.layer);
+    const pt = svgEl('circle', { r: 5.5, fill: color, stroke: 'var(--surface)', 'stroke-width': 2 }, p.layer);
+    const slopeText = svgEl('text', { x: p.opts.width - 14, y: 15, 'text-anchor': 'end', class: 'plot-label', style: `fill: ${color}; font-weight: 600` }, p.svg);
+    return { p, curve, tangent, pt, slopeText };
+  };
+  const secA = section($('.plot-sa', root), A, 'a', COL_A);
+  const secB = section($('.plot-sb', root), B, 'b', COL_B);
+
+  let a = 0.2;
+  let b = 1.3;
+
+  function drawSection(sec: ReturnType<typeof section>, dom: [number, number], at: number, f: (t: number) => number, slope: number) {
+    const { p } = sec;
+    const n = 80;
+    const d = Array.from({ length: n + 1 }, (_, i) => {
+      const t = dom[0] + ((dom[1] - dom[0]) * i) / n;
+      return `${i ? 'L' : 'M'}${p.sx(t).toFixed(1)},${p.sy(f(t)).toFixed(1)}`;
+    }).join('');
+    sec.curve.setAttribute('d', d);
+    const h = 0.18 * (dom[1] - dom[0]);
+    const s0 = f(at);
+    setAttrs(sec.tangent, { x1: p.sx(at - h), y1: p.sy(s0 - slope * h), x2: p.sx(at + h), y2: p.sy(s0 + slope * h) });
+    setAttrs(sec.pt, { cx: p.sx(at), cy: p.sy(s0) });
+    sec.slopeText.textContent = `нахил ${fmt(Math.abs(slope) < 0.005 ? 0 : slope, 2)}`;
+  }
+
+  function draw() {
+    const [ga, gb] = gradQuadratic(q, a, b);
+    setAttrs(dot, { cx: map.sx(a), cy: map.sy(b) });
+    setAttrs(guideA, { x1: map.sx(A[0]), x2: map.sx(A[1]), y1: map.sy(b), y2: map.sy(b) });
+    setAttrs(guideB, { x1: map.sx(a), x2: map.sx(a), y1: map.sy(B[0]), y2: map.sy(B[1]) });
+    drawSection(secA, A, a, (t) => S(t, b), ga);
+    drawSection(secB, B, b, (t) => S(a, t), gb);
+    const zA = Math.abs(ga) < 0.05;
+    const zB = Math.abs(gb) < 0.05;
+    if (zA && zB) {
+      status.className = 'status success';
+      status.textContent = `Дно: обидва нахили нульові. a = ${pn(opt[0])}, b = ${pn(opt[1])}, S = ${pn(Smin)} — менше не буває.`;
+    } else if (zA || zB) {
+      status.className = 'status info';
+      status.textContent = `Нахил уздовж ${zA ? 'a' : 'b'} нульовий (точка на ${zA ? 'помаранчевій' : 'зеленій'} лінії), а уздовж ${zA ? 'b' : 'a'} — ні: рухаючись уздовж ${zA ? 'b' : 'a'}, ще можна спуститися нижче.`;
+    } else {
+      status.className = 'status';
+      status.textContent = `Нахил уздовж a: ${pn(ga)}, уздовж b: ${pn(gb)}. S = ${pn(S(a, b))}.`;
+    }
+  }
+
+  const moveTo = (pa: number, pb: number) => {
+    a = clamp(pa, A[0], A[1]);
+    b = clamp(pb, B[0], B[1]);
+    draw();
+  };
+  makeDraggable(dot, map.svg, (px, py) => moveTo(map.ix(px), map.iy(py)));
+  map.svg.addEventListener('pointerdown', (e) => {
+    if (e.target === dot) return;
+    const r = map.svg.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width) * map.opts.width;
+    const py = ((e.clientY - r.top) / r.height) * map.opts.height;
+    moveTo(map.ix(px), map.iy(py));
+  });
+  const glide = (ta: number, tb: number) => {
+    const a0 = a;
+    const b0 = b;
+    animate(700, (t) => moveTo(a0 + (ta - a0) * t, b0 + (tb - b0) * t));
+  };
+  root.querySelector('[data-action="bottom"]')?.addEventListener('click', () => glide(opt[0], opt[1]));
+  // На лінію ∂S/∂a = 0 при поточному b і на лінію ∂S/∂b = 0 при поточному a.
+  root.querySelector('[data-action="line-a"]')?.addEventListener('click', () => glide((q.v[0] - q.M[0][1] * b) / q.M[0][0], b));
+  root.querySelector('[data-action="line-b"]')?.addEventListener('click', () => glide(a, (q.v[1] - q.M[1][0] * a) / q.M[1][1]));
+  draw();
+}
+
+initSlopes();
 initNormalWidget([sums, steps]);
 initLevelNet();
