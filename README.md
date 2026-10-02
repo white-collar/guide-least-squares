@@ -33,8 +33,15 @@ npm run build     # перевірка типів і збірка в dist/
 npm run preview   # перегляд зібраної версії
 ```
 
-Зібраний `dist/` — звичайні статичні файли з відносними шляхами, їх можна викласти на будь-який хостинг
-(GitHub Pages, Netlify тощо).
+Зібраний `dist/` — звичайні статичні файли з відносними шляхами, їх можна викласти на будь-який хостинг.
+
+## Публікація
+
+Кожен пуш у `main` автоматично збирає підручник і публікує його на GitHub Pages
+(`.github/workflows/pages.yml`): https://white-collar.github.io/guide-least-squares/
+
+Одноразове налаштування: Settings → Pages → Source: **GitHub Actions**. Перезапустити публікацію
+вручну можна на вкладці Actions (workflow «Deploy to GitHub Pages» → Run workflow).
 
 ## Структура
 
