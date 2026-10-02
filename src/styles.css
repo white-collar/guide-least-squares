@@ -1272,7 +1272,6 @@ ol.recipe li.extra {
   color: var(--accent);
 }
 
-
 /* Розділ 3: прямі ↔ точки простору параметрів */
 .dual-grid {
   display: grid;
