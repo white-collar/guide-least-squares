@@ -505,27 +505,50 @@ function initRedundancyWidget(): void {
   const EXPERIMENTS = 400;
   const X: [number, number] = [9.92, 10.1];
 
-  const plot = createPlot($('.plot', root), {
+  const XT = [9.94, 9.96, 9.98, 10.0, 10.02, 10.04, 10.06, 10.08];
+  const XT_COMPACT = [9.94, 9.98, 10.02, 10.06];
+
+  // ① Один експеримент: n вимірів і їх середнє.
+  const one = createPlot($('.plot-one', root), {
     width: 1000,
-    height: 340,
+    height: 130,
+    x: X,
+    y: [0, 1],
+    margin: { top: 26, right: 20, bottom: 30, left: 20 },
+    xTicks: XT,
+    xLabel: 'м',
+    ariaLabel: 'Один експеримент: виміри та їх середнє',
+    compact: { width: 440, height: 150, xTicks: XT_COMPACT },
+  });
+  // ② Той самий експеримент 400 разів: гістограма середніх.
+  const plot = createPlot($('.plot-hist', root), {
+    width: 1000,
+    height: 280,
     x: X,
     y: [0, 10],
-    margin: { top: 16, right: 20, bottom: 34, left: 20 },
-    xTicks: [9.94, 9.96, 9.98, 10.0, 10.02, 10.04, 10.06, 10.08],
+    margin: { top: 26, right: 20, bottom: 34, left: 20 },
+    xTicks: XT,
     xLabel: 'м',
-    ariaLabel: 'Виміри одного експерименту та гістограма середніх з багатьох експериментів',
-    compact: { width: 440, height: 340, xTicks: [9.94, 9.98, 10.02, 10.06] },
+    ariaLabel: 'Гістограма середніх з багатьох експериментів',
+    compact: { width: 440, height: 300, xTicks: XT_COMPACT },
   });
   const { sx, sy, layer } = plot;
+  const compact = plot.opts.width < 1000;
 
-  svgEl('line', { x1: sx(TRUE), x2: sx(TRUE), y1: sy(10), y2: sy(0), stroke: 'var(--good)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, layer);
-  const trueLbl = svgEl('text', { x: sx(TRUE) + 6, y: sy(9.4), class: 'plot-label', style: 'fill: var(--good)' }, layer);
-  trueLbl.textContent = 'істинна довжина (невідома нам)';
-  const topLbl = svgEl('text', { x: sx(X[0]) + 4, y: sy(8.9), class: 'plot-label' }, layer);
-  const botLbl = svgEl('text', { x: sx(X[0]) + 4, y: sy(5.3), class: 'plot-label' }, layer);
-  botLbl.textContent = `Середні з ${EXPERIMENTS} повторень такого експерименту`;
-  const dots = svgEl('g', {}, layer);
+  for (const p of [one, plot]) {
+    const [y0, y1] = p.opts.y;
+    svgEl('line', { x1: p.sx(TRUE), x2: p.sx(TRUE), y1: p.sy(y1), y2: p.sy(y0), stroke: 'var(--good)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, p.layer);
+  }
+  const trueLbl = svgEl('text', { x: one.sx(TRUE) + 6, y: one.sy(0.12), class: 'plot-label', style: 'fill: var(--good)' }, one.layer);
+  trueLbl.textContent = 'істинна довжина';
+  const topLbl = svgEl('text', { x: 4, y: 16, class: 'plot-label', style: 'font-weight: 600' }, one.svg);
+  const botLbl = svgEl('text', { x: 4, y: 16, class: 'plot-label', style: 'font-weight: 600' }, plot.svg);
+  botLbl.textContent = compact
+    ? `② ${EXPERIMENTS} таких експериментів: гістограма середніх`
+    : `② Повторюємо цей експеримент ${EXPERIMENTS} разів: куди падають середні`;
+  const dots = svgEl('g', {}, one.layer);
   const bars = svgEl('g', {}, layer);
+  const spreadG = svgEl('g', {}, layer);
 
   const nInput = $<HTMLInputElement>('input[name="n"]', root);
   const nOut = $('output[for="red-n"]', root);
@@ -540,33 +563,40 @@ function initRedundancyWidget(): void {
     return out;
   }
 
+  const mm = (v: number) => fmt(v, 3);
+
   function render() {
     const n = Number(nInput.value);
     const blunder = blunderBox.checked;
     nOut.textContent = String(n);
-    topLbl.textContent = n === 1 ? 'Один експеримент: 1 вимір' : `Один експеримент: ${n} вимірів і їх середнє`;
+    topLbl.textContent =
+      n === 1
+        ? '① Один експеримент: 1 вимір (він же і «середнє»)'
+        : compact
+          ? `① Один експеримент: ${n} вимірів і їх середнє`
+          : `① Один експеримент: ${n} вимірів (точки) і їх середнє (синя риска)`;
 
     // Один показовий експеримент.
     const rand = seededRandom(seed);
-    const one = experiment(rand, n, blunder);
-    const mean = one.reduce((s, v) => s + v, 0) / n;
+    const sample = experiment(rand, n, blunder);
+    const mean = sample.reduce((s, v) => s + v, 0) / n;
     dots.replaceChildren();
     const jitter = seededRandom(seed + 1);
-    one.forEach((v, k) => {
-      const cy = sy(7.2 + (jitter() - 0.5) * 1.6);
+    sample.forEach((v, k) => {
+      const cy = one.sy(0.5 + (jitter() - 0.5) * 0.45);
       const isBlunder = blunder && k === 0;
-      svgEl('circle', { cx: sx(clamp(v, X[0], X[1])), cy, r: 4.5, fill: isBlunder ? 'var(--bad)' : 'var(--point)', opacity: 0.75 }, dots);
+      svgEl('circle', { cx: one.sx(clamp(v, X[0], X[1])), cy, r: 4.5, fill: isBlunder ? 'var(--bad)' : 'var(--point)', opacity: 0.75 }, dots);
     });
     if (n > 1) {
-      svgEl('line', { x1: sx(mean), x2: sx(mean), y1: sy(8.4), y2: sy(6.0), stroke: 'var(--accent)', 'stroke-width': 3 }, dots);
+      svgEl('line', { x1: one.sx(mean), x2: one.sx(mean), y1: one.sy(0.92), y2: one.sy(0.08), stroke: 'var(--accent)', 'stroke-width': 3 }, dots);
     }
 
     // Багато експериментів → гістограма середніх.
     const rand2 = seededRandom(seed * 31 + n);
     const means: number[] = [];
     for (let e = 0; e < EXPERIMENTS; e++) {
-      const s = experiment(rand2, n, blunder);
-      means.push(s.reduce((acc, v) => acc + v, 0) / n);
+      const smp = experiment(rand2, n, blunder);
+      means.push(smp.reduce((acc, v) => acc + v, 0) / n);
     }
     const BIN = 0.002;
     const counts = new Map<number, number>();
@@ -575,23 +605,47 @@ function initRedundancyWidget(): void {
       counts.set(b, (counts.get(b) ?? 0) + 1);
     }
     const maxCount = Math.max(...counts.values());
+    const H = 7.4; // висота найвищого стовпчика в одиницях осі y
     bars.replaceChildren();
     for (const [b, c] of counts) {
       const x0 = b * BIN - BIN / 2;
       if (x0 < X[0] || x0 > X[1]) continue;
-      const h = (c / maxCount) * 4.4;
-      svgEl('rect', { x: sx(x0) + 0.5, width: sx(x0 + BIN) - sx(x0) - 1, y: sy(h), height: sy(0) - sy(h), fill: 'var(--accent)', opacity: 0.55 }, bars);
+      const h = (c / maxCount) * H;
+      const rect = svgEl('rect', { x: sx(x0) + 0.5, width: Math.max(1, sx(x0 + BIN) - sx(x0) - 1), y: sy(h), height: sy(0) - sy(h), fill: 'var(--accent)', opacity: 0.55, style: 'cursor: pointer' }, bars);
+      const text = `${c} з ${EXPERIMENTS} експериментів дали середнє між ${mm(x0)} і ${mm(x0 + BIN)} м.`;
+      svgEl('title', {}, rect).textContent = text;
+      rect.addEventListener('click', () => {
+        bars.querySelectorAll('rect').forEach((r) => r.setAttribute('opacity', '0.55'));
+        rect.setAttribute('opacity', '1');
+        status.className = 'status info';
+        status.innerHTML = `<b>Цей стовпчик:</b> ${text} Що вищий стовпчик, то частіше виходить таке середнє.`;
+      });
     }
+    // Висота найвищого стовпчика числом.
+    const peak = [...counts.entries()].find(([, c]) => c === maxCount)![0] * BIN;
+    const peakLbl = svgEl('text', { x: sx(peak), y: sy(H) - 5, 'text-anchor': 'middle', class: 'plot-label' }, bars);
+    peakLbl.textContent = `${maxCount} разів`;
+
     const avg = means.reduce((s, v) => s + v, 0) / means.length;
     const sd = Math.sqrt(means.reduce((s, v) => s + (v - avg) ** 2, 0) / (means.length - 1));
     spreadOut.textContent = `±${fmt(sd * 1000, 1)} мм`;
+
+    // Ширина «гори»: ±σ навколо середнього.
+    spreadG.replaceChildren();
+    const yb = H + 1.6;
+    const xl = sx(clamp(avg - sd, X[0], X[1]));
+    const xr = sx(clamp(avg + sd, X[0], X[1]));
+    svgEl('line', { x1: xl, x2: xr, y1: sy(yb), y2: sy(yb), stroke: 'var(--warn)', 'stroke-width': 2 }, spreadG);
+    for (const x of [xl, xr]) svgEl('line', { x1: x, x2: x, y1: sy(yb) - 6, y2: sy(yb) + 6, stroke: 'var(--warn)', 'stroke-width': 2 }, spreadG);
+    const wl = svgEl('text', { x: xr + 8, y: sy(yb) + 4, class: 'plot-label', style: 'fill: var(--warn); font-weight: 600' }, spreadG);
+    wl.textContent = `ширина гори ±${fmt(sd * 1000, 1)} мм`;
 
     let msg: string;
     if (!blunder) {
       msg =
         n === 1
-          ? 'Один вимір — одне число. Наскільки воно точне, ми не знаємо: порівняти немає з чим.'
-          : `Випадкові похибки частково взаємно гасяться: що більше вимірів, то вужча гістограма середніх.`;
+          ? 'Один вимір — одне число. Гора широка: окремий вимір легко помиляється і на 1, і на 3 см. Збільште n.'
+          : `Середнє з ${n} вимірів: гора приблизно у ${fmt(Math.sqrt(n), 1)} раза вужча, ніж для одного виміру. Випадкові похибки частково гасять одна одну.`;
     } else if (n === 1) {
       msg = '<b>Промах не помічено.</b> Вимір хибний на 6 см, але без другого виміру про це не дізнатися.';
     } else if (n === 2) {
