@@ -666,7 +666,134 @@ function initRedundancyWidget(): void {
   render();
 }
 
+/* =====================================================================
+   «Більше подробиць»: площина стовпців A і проєкція y на неї
+   ===================================================================== */
+type V3 = [number, number, number];
+
+function initPlaneScene(): void {
+  const root = $('#w-plane');
+  const W = 520;
+  const H = 400;
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, style: 'max-width: 560px; margin: 0 auto', role: 'img', 'aria-label': 'Площина стовпців A, вектор вимірів y та його проєкція' }, $('.plot-plane', root));
+  const scene = svgEl('g', {}, svg);
+
+  const c1: V3 = [1, 1, 1];
+  const c2: V3 = [1, 2, 3];
+  const y: V3 = [1, 2, 2];
+  const [a, b] = [2 / 3, 1 / 2]; // МНК-розв'язок для точок (1; 1), (2; 2), (3; 2)
+  const comb = (s: number, t: number): V3 => [s * c1[0] + t * c2[0], s * c1[1] + t * c2[1], s * c1[2] + t * c2[2]];
+  const yh = comb(a, b);
+  const sub = (p: V3, q: V3): V3 => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
+  const add = (p: V3, q: V3, k = 1): V3 => [p[0] + k * q[0], p[1] + k * q[1], p[2] + k * q[2]];
+  const unit = (p: V3): V3 => {
+    const l = Math.hypot(...p);
+    return [p[0] / l, p[1] / l, p[2] / l];
+  };
+
+  // Власна система координат сцени: площина стовпців стає «підлогою» (z = 0),
+  // нормаль до неї — віссю z. Так видно, що y стирчить з площини.
+  const cross = (p: V3, q: V3): V3 => [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]];
+  const dot = (p: V3, q: V3) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+  const n0 = unit(cross(c1, c2));
+  const N: V3 = dot(sub(y, yh), n0) > 0 ? n0 : [-n0[0], -n0[1], -n0[2]]; // y — «над» площиною
+  const R = unit(yh);
+  const M = cross(N, R);
+  let yaw = -0.45;
+  let pitch = 0.75;
+  const C: V3 = [yh[0] / 2, yh[1] / 2, yh[2] / 2]; // обертаємо навколо середини сцени
+  const SCALE = 88;
+  // Ортографічна проєкція: поворот навколо нормалі, потім нахил до глядача.
+  const proj = (p0: V3) => {
+    const d = sub(p0, C);
+    const p: V3 = [dot(d, R), dot(d, M), dot(d, N)];
+    const c = Math.cos(yaw);
+    const s = Math.sin(yaw);
+    const x1 = c * p[0] - s * p[1];
+    const y1 = s * p[0] + c * p[1];
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const z2 = cp * p[2] - sp * y1;
+    return { x: W / 2 + SCALE * x1, y: H / 2 + 20 - SCALE * z2 };
+  };
+  const pt = (p: V3) => {
+    const q = proj(p);
+    return `${q.x.toFixed(1)},${q.y.toFixed(1)}`;
+  };
+
+  function arrow(from: V3, to: V3, color: string, label: string, dashed = false) {
+    const p = proj(from);
+    const q = proj(to);
+    const ang = Math.atan2(q.y - p.y, q.x - p.x);
+    svgEl('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, stroke: color, 'stroke-width': 3, 'stroke-dasharray': dashed ? '6 5' : 'none', 'stroke-linecap': 'round' }, scene);
+    if (!dashed) {
+      const h = 11;
+      svgEl('path', { d: `M${q.x},${q.y} L${q.x - h * Math.cos(ang - 0.4)},${q.y - h * Math.sin(ang - 0.4)} L${q.x - h * Math.cos(ang + 0.4)},${q.y - h * Math.sin(ang + 0.4)} Z`, fill: color }, scene);
+    }
+    if (label) {
+      const t = svgEl('text', { x: q.x + 8 * Math.cos(ang) + 4, y: q.y + 8 * Math.sin(ang) + 4, class: 'plot-label', style: `fill: ${color}; font-weight: 600; font-size: 18px` }, scene);
+      t.textContent = label;
+    }
+  }
+
+  function draw() {
+    scene.replaceChildren();
+    // Осі: кожна вісь — одне рівняння (один вимір).
+    const AX = 2.6;
+    (['рівн. 1', 'рівн. 2', 'рівн. 3'] as const).forEach((name, i) => {
+      const e: V3 = [0, 0, 0];
+      e[i] = AX;
+      const p = proj([0, 0, 0]);
+      const q = proj(e);
+      svgEl('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, stroke: 'var(--muted)', 'stroke-width': 1 }, scene);
+      const t = svgEl('text', { x: q.x + 4, y: q.y - 4, class: 'plot-label', style: 'font-size: 15px' }, scene);
+      t.textContent = name;
+    });
+    // Шматок площини стовпців (прямокутник у її власних осях R, M) із сіткою.
+    const inPlane = (u: number, v: number): V3 => add(add([0, 0, 0], R, u), M, v);
+    const U0 = -0.4, U1 = 3.9, V0 = -1.3, V1 = 1.3;
+    svgEl('polygon', { points: [inPlane(U0, V0), inPlane(U1, V0), inPlane(U1, V1), inPlane(U0, V1)].map(pt).join(' '), fill: 'var(--accent)', 'fill-opacity': 0.13, stroke: 'var(--accent)', 'stroke-opacity': 0.4 }, scene);
+    for (let k = 1; k < 8; k++) {
+      const u = U0 + ((U1 - U0) * k) / 8;
+      const v = V0 + ((V1 - V0) * k) / 8;
+      svgEl('polyline', { points: [inPlane(u, V0), inPlane(u, V1)].map(pt).join(' '), stroke: 'var(--accent)', 'stroke-opacity': 0.15, fill: 'none' }, scene);
+      svgEl('polyline', { points: [inPlane(U0, v), inPlane(U1, v)].map(pt).join(' '), stroke: 'var(--accent)', 'stroke-opacity': 0.15, fill: 'none' }, scene);
+    }
+    const O: V3 = [0, 0, 0];
+    arrow(O, c1, 'var(--accent)', '(1,1,1)');
+    arrow(O, c2, 'var(--accent)', '(1,2,3)');
+    arrow(O, yh, 'var(--good)', 'ŷ');
+    arrow(O, y, 'var(--bad)', 'y');
+    arrow(yh, y, 'var(--warn)', '', true);
+    // Позначка прямого кута в основі перпендикуляра.
+    const e = 0.18;
+    const u = unit(sub(O, yh));
+    const v = unit(sub(y, yh));
+    svgEl('polyline', { points: [add(yh, u, e), add(add(yh, u, e), v, e), add(yh, v, e)].map(pt).join(' '), fill: 'none', stroke: 'var(--warn)', 'stroke-width': 1.5 }, scene);
+    const g = proj(yh);
+    svgEl('circle', { cx: g.x, cy: g.y, r: 4, fill: 'var(--good)' }, scene);
+  }
+
+  let drag: { x: number; y: number; yaw: number; pitch: number } | null = null;
+  svg.addEventListener('pointerdown', (ev) => {
+    drag = { x: ev.clientX, y: ev.clientY, yaw, pitch };
+    svg.setPointerCapture(ev.pointerId);
+  });
+  svg.addEventListener('pointermove', (ev) => {
+    if (!drag) return;
+    yaw = drag.yaw - (ev.clientX - drag.x) * 0.01;
+    pitch = clamp(drag.pitch + (ev.clientY - drag.y) * 0.01, -1.3, 1.3);
+    draw();
+  });
+  const end = () => (drag = null);
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+  svg.style.cursor = 'grab';
+  draw();
+}
+
 initMeanWidget();
 initLevellingWidget();
 initLineWidget(makeRankPanel());
 initRedundancyWidget();
+initPlaneScene();
