@@ -505,27 +505,50 @@ function initRedundancyWidget(): void {
   const EXPERIMENTS = 400;
   const X: [number, number] = [9.92, 10.1];
 
-  const plot = createPlot($('.plot', root), {
+  const XT = [9.94, 9.96, 9.98, 10.0, 10.02, 10.04, 10.06, 10.08];
+  const XT_COMPACT = [9.94, 9.98, 10.02, 10.06];
+
+  // ① Один експеримент: n вимірів і їх середнє.
+  const one = createPlot($('.plot-one', root), {
     width: 1000,
-    height: 340,
+    height: 130,
+    x: X,
+    y: [0, 1],
+    margin: { top: 26, right: 20, bottom: 30, left: 20 },
+    xTicks: XT,
+    xLabel: 'м',
+    ariaLabel: 'Один експеримент: виміри та їх середнє',
+    compact: { width: 440, height: 150, xTicks: XT_COMPACT },
+  });
+  // ② Той самий експеримент 400 разів: гістограма середніх.
+  const plot = createPlot($('.plot-hist', root), {
+    width: 1000,
+    height: 280,
     x: X,
     y: [0, 10],
-    margin: { top: 16, right: 20, bottom: 34, left: 20 },
-    xTicks: [9.94, 9.96, 9.98, 10.0, 10.02, 10.04, 10.06, 10.08],
+    margin: { top: 26, right: 20, bottom: 34, left: 20 },
+    xTicks: XT,
     xLabel: 'м',
-    ariaLabel: 'Виміри одного експерименту та гістограма середніх з багатьох експериментів',
-    compact: { width: 440, height: 340, xTicks: [9.94, 9.98, 10.02, 10.06] },
+    ariaLabel: 'Гістограма середніх з багатьох експериментів',
+    compact: { width: 440, height: 300, xTicks: XT_COMPACT },
   });
   const { sx, sy, layer } = plot;
+  const compact = plot.opts.width < 1000;
 
-  svgEl('line', { x1: sx(TRUE), x2: sx(TRUE), y1: sy(10), y2: sy(0), stroke: 'var(--good)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, layer);
-  const trueLbl = svgEl('text', { x: sx(TRUE) + 6, y: sy(9.4), class: 'plot-label', style: 'fill: var(--good)' }, layer);
-  trueLbl.textContent = 'істинна довжина (невідома нам)';
-  const topLbl = svgEl('text', { x: sx(X[0]) + 4, y: sy(8.9), class: 'plot-label' }, layer);
-  const botLbl = svgEl('text', { x: sx(X[0]) + 4, y: sy(5.3), class: 'plot-label' }, layer);
-  botLbl.textContent = `Середні з ${EXPERIMENTS} повторень такого експерименту`;
-  const dots = svgEl('g', {}, layer);
+  for (const p of [one, plot]) {
+    const [y0, y1] = p.opts.y;
+    svgEl('line', { x1: p.sx(TRUE), x2: p.sx(TRUE), y1: p.sy(y1), y2: p.sy(y0), stroke: 'var(--good)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }, p.layer);
+  }
+  const trueLbl = svgEl('text', { x: one.sx(TRUE) + 6, y: one.sy(0.12), class: 'plot-label', style: 'fill: var(--good)' }, one.layer);
+  trueLbl.textContent = 'істинна довжина';
+  const topLbl = svgEl('text', { x: 4, y: 16, class: 'plot-label', style: 'font-weight: 600' }, one.svg);
+  const botLbl = svgEl('text', { x: 4, y: 16, class: 'plot-label', style: 'font-weight: 600' }, plot.svg);
+  botLbl.textContent = compact
+    ? `② ${EXPERIMENTS} таких експериментів: гістограма середніх`
+    : `② Повторюємо цей експеримент ${EXPERIMENTS} разів: куди падають середні`;
+  const dots = svgEl('g', {}, one.layer);
   const bars = svgEl('g', {}, layer);
+  const spreadG = svgEl('g', {}, layer);
 
   const nInput = $<HTMLInputElement>('input[name="n"]', root);
   const nOut = $('output[for="red-n"]', root);
@@ -540,33 +563,40 @@ function initRedundancyWidget(): void {
     return out;
   }
 
+  const mm = (v: number) => fmt(v, 3);
+
   function render() {
     const n = Number(nInput.value);
     const blunder = blunderBox.checked;
     nOut.textContent = String(n);
-    topLbl.textContent = n === 1 ? 'Один експеримент: 1 вимір' : `Один експеримент: ${n} вимірів і їх середнє`;
+    topLbl.textContent =
+      n === 1
+        ? '① Один експеримент: 1 вимір (він же і «середнє»)'
+        : compact
+          ? `① Один експеримент: ${n} вимірів і їх середнє`
+          : `① Один експеримент: ${n} вимірів (точки) і їх середнє (синя риска)`;
 
     // Один показовий експеримент.
     const rand = seededRandom(seed);
-    const one = experiment(rand, n, blunder);
-    const mean = one.reduce((s, v) => s + v, 0) / n;
+    const sample = experiment(rand, n, blunder);
+    const mean = sample.reduce((s, v) => s + v, 0) / n;
     dots.replaceChildren();
     const jitter = seededRandom(seed + 1);
-    one.forEach((v, k) => {
-      const cy = sy(7.2 + (jitter() - 0.5) * 1.6);
+    sample.forEach((v, k) => {
+      const cy = one.sy(0.5 + (jitter() - 0.5) * 0.45);
       const isBlunder = blunder && k === 0;
-      svgEl('circle', { cx: sx(clamp(v, X[0], X[1])), cy, r: 4.5, fill: isBlunder ? 'var(--bad)' : 'var(--point)', opacity: 0.75 }, dots);
+      svgEl('circle', { cx: one.sx(clamp(v, X[0], X[1])), cy, r: 4.5, fill: isBlunder ? 'var(--bad)' : 'var(--point)', opacity: 0.75 }, dots);
     });
     if (n > 1) {
-      svgEl('line', { x1: sx(mean), x2: sx(mean), y1: sy(8.4), y2: sy(6.0), stroke: 'var(--accent)', 'stroke-width': 3 }, dots);
+      svgEl('line', { x1: one.sx(mean), x2: one.sx(mean), y1: one.sy(0.92), y2: one.sy(0.08), stroke: 'var(--accent)', 'stroke-width': 3 }, dots);
     }
 
     // Багато експериментів → гістограма середніх.
     const rand2 = seededRandom(seed * 31 + n);
     const means: number[] = [];
     for (let e = 0; e < EXPERIMENTS; e++) {
-      const s = experiment(rand2, n, blunder);
-      means.push(s.reduce((acc, v) => acc + v, 0) / n);
+      const smp = experiment(rand2, n, blunder);
+      means.push(smp.reduce((acc, v) => acc + v, 0) / n);
     }
     const BIN = 0.002;
     const counts = new Map<number, number>();
@@ -575,23 +605,47 @@ function initRedundancyWidget(): void {
       counts.set(b, (counts.get(b) ?? 0) + 1);
     }
     const maxCount = Math.max(...counts.values());
+    const H = 7.4; // висота найвищого стовпчика в одиницях осі y
     bars.replaceChildren();
     for (const [b, c] of counts) {
       const x0 = b * BIN - BIN / 2;
       if (x0 < X[0] || x0 > X[1]) continue;
-      const h = (c / maxCount) * 4.4;
-      svgEl('rect', { x: sx(x0) + 0.5, width: sx(x0 + BIN) - sx(x0) - 1, y: sy(h), height: sy(0) - sy(h), fill: 'var(--accent)', opacity: 0.55 }, bars);
+      const h = (c / maxCount) * H;
+      const rect = svgEl('rect', { x: sx(x0) + 0.5, width: Math.max(1, sx(x0 + BIN) - sx(x0) - 1), y: sy(h), height: sy(0) - sy(h), fill: 'var(--accent)', opacity: 0.55, style: 'cursor: pointer' }, bars);
+      const text = `${c} з ${EXPERIMENTS} експериментів дали середнє між ${mm(x0)} і ${mm(x0 + BIN)} м.`;
+      svgEl('title', {}, rect).textContent = text;
+      rect.addEventListener('click', () => {
+        bars.querySelectorAll('rect').forEach((r) => r.setAttribute('opacity', '0.55'));
+        rect.setAttribute('opacity', '1');
+        status.className = 'status info';
+        status.innerHTML = `<b>Цей стовпчик:</b> ${text} Що вищий стовпчик, то частіше виходить таке середнє.`;
+      });
     }
+    // Висота найвищого стовпчика числом.
+    const peak = [...counts.entries()].find(([, c]) => c === maxCount)![0] * BIN;
+    const peakLbl = svgEl('text', { x: sx(peak), y: sy(H) - 5, 'text-anchor': 'middle', class: 'plot-label' }, bars);
+    peakLbl.textContent = `${maxCount} разів`;
+
     const avg = means.reduce((s, v) => s + v, 0) / means.length;
     const sd = Math.sqrt(means.reduce((s, v) => s + (v - avg) ** 2, 0) / (means.length - 1));
     spreadOut.textContent = `±${fmt(sd * 1000, 1)} мм`;
+
+    // Ширина «гори»: ±σ навколо середнього.
+    spreadG.replaceChildren();
+    const yb = H + 1.6;
+    const xl = sx(clamp(avg - sd, X[0], X[1]));
+    const xr = sx(clamp(avg + sd, X[0], X[1]));
+    svgEl('line', { x1: xl, x2: xr, y1: sy(yb), y2: sy(yb), stroke: 'var(--warn)', 'stroke-width': 2 }, spreadG);
+    for (const x of [xl, xr]) svgEl('line', { x1: x, x2: x, y1: sy(yb) - 6, y2: sy(yb) + 6, stroke: 'var(--warn)', 'stroke-width': 2 }, spreadG);
+    const wl = svgEl('text', { x: xr + 8, y: sy(yb) + 4, class: 'plot-label', style: 'fill: var(--warn); font-weight: 600' }, spreadG);
+    wl.textContent = `ширина гори ±${fmt(sd * 1000, 1)} мм`;
 
     let msg: string;
     if (!blunder) {
       msg =
         n === 1
-          ? 'Один вимір — одне число. Наскільки воно точне, ми не знаємо: порівняти немає з чим.'
-          : `Випадкові похибки частково взаємно гасяться: що більше вимірів, то вужча гістограма середніх.`;
+          ? 'Один вимір — одне число. Гора широка: окремий вимір легко помиляється і на 1, і на 3 см. Збільште n.'
+          : `Середнє з ${n} вимірів: гора приблизно у ${fmt(Math.sqrt(n), 1)} раза вужча, ніж для одного виміру. Випадкові похибки частково гасять одна одну.`;
     } else if (n === 1) {
       msg = '<b>Промах не помічено.</b> Вимір хибний на 6 см, але без другого виміру про це не дізнатися.';
     } else if (n === 2) {
@@ -612,7 +666,134 @@ function initRedundancyWidget(): void {
   render();
 }
 
+/* =====================================================================
+   «Більше подробиць»: площина стовпців A і проєкція y на неї
+   ===================================================================== */
+type V3 = [number, number, number];
+
+function initPlaneScene(): void {
+  const root = $('#w-plane');
+  const W = 520;
+  const H = 400;
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, style: 'max-width: 560px; margin: 0 auto', role: 'img', 'aria-label': 'Площина стовпців A, вектор вимірів y та його проєкція' }, $('.plot-plane', root));
+  const scene = svgEl('g', {}, svg);
+
+  const c1: V3 = [1, 1, 1];
+  const c2: V3 = [1, 2, 3];
+  const y: V3 = [1, 2, 2];
+  const [a, b] = [2 / 3, 1 / 2]; // МНК-розв'язок для точок (1; 1), (2; 2), (3; 2)
+  const comb = (s: number, t: number): V3 => [s * c1[0] + t * c2[0], s * c1[1] + t * c2[1], s * c1[2] + t * c2[2]];
+  const yh = comb(a, b);
+  const sub = (p: V3, q: V3): V3 => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
+  const add = (p: V3, q: V3, k = 1): V3 => [p[0] + k * q[0], p[1] + k * q[1], p[2] + k * q[2]];
+  const unit = (p: V3): V3 => {
+    const l = Math.hypot(...p);
+    return [p[0] / l, p[1] / l, p[2] / l];
+  };
+
+  // Власна система координат сцени: площина стовпців стає «підлогою» (z = 0),
+  // нормаль до неї — віссю z. Так видно, що y стирчить з площини.
+  const cross = (p: V3, q: V3): V3 => [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]];
+  const dot = (p: V3, q: V3) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+  const n0 = unit(cross(c1, c2));
+  const N: V3 = dot(sub(y, yh), n0) > 0 ? n0 : [-n0[0], -n0[1], -n0[2]]; // y — «над» площиною
+  const R = unit(yh);
+  const M = cross(N, R);
+  let yaw = -0.45;
+  let pitch = 0.75;
+  const C: V3 = [yh[0] / 2, yh[1] / 2, yh[2] / 2]; // обертаємо навколо середини сцени
+  const SCALE = 88;
+  // Ортографічна проєкція: поворот навколо нормалі, потім нахил до глядача.
+  const proj = (p0: V3) => {
+    const d = sub(p0, C);
+    const p: V3 = [dot(d, R), dot(d, M), dot(d, N)];
+    const c = Math.cos(yaw);
+    const s = Math.sin(yaw);
+    const x1 = c * p[0] - s * p[1];
+    const y1 = s * p[0] + c * p[1];
+    const cp = Math.cos(pitch);
+    const sp = Math.sin(pitch);
+    const z2 = cp * p[2] - sp * y1;
+    return { x: W / 2 + SCALE * x1, y: H / 2 + 20 - SCALE * z2 };
+  };
+  const pt = (p: V3) => {
+    const q = proj(p);
+    return `${q.x.toFixed(1)},${q.y.toFixed(1)}`;
+  };
+
+  function arrow(from: V3, to: V3, color: string, label: string, dashed = false) {
+    const p = proj(from);
+    const q = proj(to);
+    const ang = Math.atan2(q.y - p.y, q.x - p.x);
+    svgEl('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, stroke: color, 'stroke-width': 3, 'stroke-dasharray': dashed ? '6 5' : 'none', 'stroke-linecap': 'round' }, scene);
+    if (!dashed) {
+      const h = 11;
+      svgEl('path', { d: `M${q.x},${q.y} L${q.x - h * Math.cos(ang - 0.4)},${q.y - h * Math.sin(ang - 0.4)} L${q.x - h * Math.cos(ang + 0.4)},${q.y - h * Math.sin(ang + 0.4)} Z`, fill: color }, scene);
+    }
+    if (label) {
+      const t = svgEl('text', { x: q.x + 8 * Math.cos(ang) + 4, y: q.y + 8 * Math.sin(ang) + 4, class: 'plot-label', style: `fill: ${color}; font-weight: 600; font-size: 18px` }, scene);
+      t.textContent = label;
+    }
+  }
+
+  function draw() {
+    scene.replaceChildren();
+    // Осі: кожна вісь — одне рівняння (один вимір).
+    const AX = 2.6;
+    (['рівн. 1', 'рівн. 2', 'рівн. 3'] as const).forEach((name, i) => {
+      const e: V3 = [0, 0, 0];
+      e[i] = AX;
+      const p = proj([0, 0, 0]);
+      const q = proj(e);
+      svgEl('line', { x1: p.x, y1: p.y, x2: q.x, y2: q.y, stroke: 'var(--muted)', 'stroke-width': 1 }, scene);
+      const t = svgEl('text', { x: q.x + 4, y: q.y - 4, class: 'plot-label', style: 'font-size: 15px' }, scene);
+      t.textContent = name;
+    });
+    // Шматок площини стовпців (прямокутник у її власних осях R, M) із сіткою.
+    const inPlane = (u: number, v: number): V3 => add(add([0, 0, 0], R, u), M, v);
+    const U0 = -0.4, U1 = 3.9, V0 = -1.3, V1 = 1.3;
+    svgEl('polygon', { points: [inPlane(U0, V0), inPlane(U1, V0), inPlane(U1, V1), inPlane(U0, V1)].map(pt).join(' '), fill: 'var(--accent)', 'fill-opacity': 0.13, stroke: 'var(--accent)', 'stroke-opacity': 0.4 }, scene);
+    for (let k = 1; k < 8; k++) {
+      const u = U0 + ((U1 - U0) * k) / 8;
+      const v = V0 + ((V1 - V0) * k) / 8;
+      svgEl('polyline', { points: [inPlane(u, V0), inPlane(u, V1)].map(pt).join(' '), stroke: 'var(--accent)', 'stroke-opacity': 0.15, fill: 'none' }, scene);
+      svgEl('polyline', { points: [inPlane(U0, v), inPlane(U1, v)].map(pt).join(' '), stroke: 'var(--accent)', 'stroke-opacity': 0.15, fill: 'none' }, scene);
+    }
+    const O: V3 = [0, 0, 0];
+    arrow(O, c1, 'var(--accent)', '(1,1,1)');
+    arrow(O, c2, 'var(--accent)', '(1,2,3)');
+    arrow(O, yh, 'var(--good)', 'ŷ');
+    arrow(O, y, 'var(--bad)', 'y');
+    arrow(yh, y, 'var(--warn)', '', true);
+    // Позначка прямого кута в основі перпендикуляра.
+    const e = 0.18;
+    const u = unit(sub(O, yh));
+    const v = unit(sub(y, yh));
+    svgEl('polyline', { points: [add(yh, u, e), add(add(yh, u, e), v, e), add(yh, v, e)].map(pt).join(' '), fill: 'none', stroke: 'var(--warn)', 'stroke-width': 1.5 }, scene);
+    const g = proj(yh);
+    svgEl('circle', { cx: g.x, cy: g.y, r: 4, fill: 'var(--good)' }, scene);
+  }
+
+  let drag: { x: number; y: number; yaw: number; pitch: number } | null = null;
+  svg.addEventListener('pointerdown', (ev) => {
+    drag = { x: ev.clientX, y: ev.clientY, yaw, pitch };
+    svg.setPointerCapture(ev.pointerId);
+  });
+  svg.addEventListener('pointermove', (ev) => {
+    if (!drag) return;
+    yaw = drag.yaw - (ev.clientX - drag.x) * 0.01;
+    pitch = clamp(drag.pitch + (ev.clientY - drag.y) * 0.01, -1.3, 1.3);
+    draw();
+  });
+  const end = () => (drag = null);
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+  svg.style.cursor = 'grab';
+  draw();
+}
+
 initMeanWidget();
 initLevellingWidget();
 initLineWidget(makeRankPanel());
 initRedundancyWidget();
+initPlaneScene();
