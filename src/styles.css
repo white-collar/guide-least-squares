@@ -1285,3 +1285,17 @@ ol.recipe li.extra {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Розділ 2: |r| проти r² */
+.kink-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+@media (max-width: 560px) {
+  .kink-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

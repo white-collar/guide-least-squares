@@ -189,10 +189,10 @@ function initCriteriaWidget(): void {
   };
   const TEXT: Record<Crit, string> = {
     sum:
-      '<b>Сума нев\'язок.</b> Плюси й мінуси взаємно гасяться: нуль дає <i>будь-яка</i> пряма, що проходить через центр ваги точок. Натисніть «↻ Обертати навколо центру ваги» — пряма обертатиметься, а сума лишатиметься нулем. Як критерій це не працює.',
-    abs: '<b>Сума модулів (L1).</b> Знаки вже не заважають, і мінімум існує. Але функція має «злами», де похідна не визначена, тож формули для мінімуму немає — лише перебір чи ітерації. Оптимальна пряма проходить точно через дві точки.',
+      '<b>Сума нев\'язок.</b> Плюси й мінуси взаємно гасяться: нуль дає <i>будь-яка</i> пряма, що проходить через центр ваги точок — хрестик на графіку, точку із середнім усіх x і середнім усіх y. Натисніть «↻ Обертати навколо центру ваги» — пряма обертатиметься, а сума лишатиметься нулем. Як критерій це не працює.',
+    abs: '<b>Сума модулів (L1).</b> Знаки вже не заважають, і мінімум існує. Але функція має «злами» — гострі кути там, де пряма проходить точно через якусь точку. У злам нахил не визначений, тож формули для мінімуму немає — лише перебір чи ітерації (див. «Чому L1 ламана» нижче). Оптимальна пряма проходить точно через дві точки.',
     max: '<b>Найбільша нев\'язка (мінімакс, L∞).</b> Дбає лише про найгіршу точку, решта на результат не впливають. Тому одна погана точка тягне за собою всю пряму.',
-    sq: '<b>Сума квадратів (L2).</b> Кожна нев\'язка — площа квадрата, тож велика нев\'язка «коштує» непропорційно дорожче: 2 → 4, а 3 → 9. Функція гладка, і мінімум дає проста формула.',
+    sq: '<b>Сума квадратів (L2).</b> Кожна нев\'язка — площа квадрата, тож велика нев\'язка «коштує» непропорційно дорожче: 2 → 4, а 3 → 9. Функція гладка, без кутів: на дні її нахил рівно нуль, і з цієї умови виходить проста формула (розділ 4).',
   };
 
   function optimum(c: Crit): Line | null {
@@ -595,6 +595,82 @@ function initLevelWidget(): void {
   render();
 }
 
+/* =====================================================================
+   2.2. Одна «цеглинка» критерію: |r| (злам) проти r² (гладка)
+   ===================================================================== */
+function initKinkWidget(): void {
+  const root = $('#w-kink');
+  const rIn = $<HTMLInputElement>('input[name="r"]', root);
+  const rOut = $('output[for="kink-r"]', root);
+  const status = $('[data-out="status"]', root);
+  const R: [number, number] = [-2, 2];
+
+  const make = (box: HTMLElement, title: string, f: (r: number) => number, yMax: number, yTicks: number[]) => {
+    const p = createPlot(box, {
+      width: 300,
+      height: 220,
+      x: R,
+      y: [-0.3, yMax],
+      margin: { top: 24, right: 12, bottom: 28, left: 30 },
+      xTicks: [-2, -1, 0, 1, 2],
+      yTicks,
+      xLabel: 'r',
+      ariaLabel: `Графік ${title}`,
+    });
+    const t = svgEl('text', { x: p.opts.margin.left + 4, y: 16, class: 'plot-label', style: 'font-weight: 600' }, p.svg);
+    t.textContent = title;
+    const n = 120;
+    const d = Array.from({ length: n + 1 }, (_, i) => {
+      const r = R[0] + ((R[1] - R[0]) * i) / n;
+      return `${i ? 'L' : 'M'}${p.sx(r).toFixed(1)},${p.sy(f(r)).toFixed(1)}`;
+    }).join('');
+    svgEl('path', { d, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2.5 }, p.layer);
+    const tangents = svgEl('g', {}, p.layer);
+    const dot = svgEl('circle', { r: 5.5, fill: 'var(--warn)', stroke: 'var(--surface)', 'stroke-width': 2 }, p.layer);
+    const slope = svgEl('text', { x: p.opts.width - 12, y: 16, 'text-anchor': 'end', class: 'plot-label', style: 'fill: var(--warn); font-weight: 600' }, p.svg);
+    return { p, tangents, dot, slope };
+  };
+  const abs = make($('.plot-abs', root), '|r| — у L1', Math.abs, 2.2, [0, 1, 2]);
+  const sq = make($('.plot-sq', root), 'r² — у сумі квадратів', (r) => r * r, 4.2, [0, 1, 2, 3, 4]);
+
+  const tangent = (pl: Plot, g: SVGGElement, r0: number, y0: number, k: number, from = -0.6, to = 0.6) => {
+    svgEl('line', { x1: pl.sx(r0 + from), y1: pl.sy(y0 + k * from), x2: pl.sx(r0 + to), y2: pl.sy(y0 + k * to), stroke: 'var(--warn)', 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
+  };
+
+  function draw() {
+    const r = Number(rIn.value);
+    rOut.textContent = fmt(r, 2);
+    const atKink = Math.abs(r) < 1e-9;
+    // |r|
+    abs.tangents.replaceChildren();
+    setAttrs(abs.dot, { cx: abs.p.sx(r), cy: abs.p.sy(Math.abs(r)) });
+    if (atKink) {
+      tangent(abs.p, abs.tangents, 0, 0, -1, -0.7, 0);
+      tangent(abs.p, abs.tangents, 0, 0, 1, 0, 0.7);
+      abs.slope.textContent = 'нахил: −1 чи +1?';
+    } else {
+      tangent(abs.p, abs.tangents, r, Math.abs(r), Math.sign(r));
+      abs.slope.textContent = `нахил ${fmt(Math.sign(r), 0, true)}`;
+    }
+    // r²
+    sq.tangents.replaceChildren();
+    setAttrs(sq.dot, { cx: sq.p.sx(r), cy: sq.p.sy(r * r) });
+    tangent(sq.p, sq.tangents, r, r * r, 2 * r);
+    sq.slope.textContent = `нахил ${fmt(2 * r, 1, true)}`;
+
+    if (atKink) {
+      status.className = 'status warn';
+      status.textContent = 'r = 0: у |r| гострий кут — зліва нахил −1, справа +1, одного числа немає. У r² нахил рівно 0: це дно параболи.';
+    } else {
+      status.className = 'status info';
+      status.textContent = `Нахил |r| — завжди ${r > 0 ? '+1' : '−1'}, хоч би де ми були на цій гілці; біля нуля він стрибає. Нахил r² дорівнює 2r = ${fmt(2 * r, 1)} і плавно прямує до нуля разом з r.`;
+    }
+  }
+  rIn.addEventListener('input', draw);
+  draw();
+}
+
 initCriteriaWidget();
 initOneDimWidget();
 initLevelWidget();
+initKinkWidget();
